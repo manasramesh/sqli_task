@@ -1,0 +1,6 @@
+The below are the current predefined passwords added to the db commands, 
+Password123
+Admin555
+Test789
+User2024
+Login999

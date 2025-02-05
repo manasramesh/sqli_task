@@ -1,0 +1,64 @@
+db name : password_system
+table name : passwords
+column name : password_hash
+port : 3306 , 33060
+root : Jackychan@123
+
+# 1. Update package list
+sudo apt update
+
+# 2. Install MySQL Server
+sudo apt install mysql-server -y
+
+# 3. Start MySQL service
+sudo systemctl start mysql
+sudo systemctl enable mysql
+
+# 4. Check MySQL status
+sudo systemctl status mysql
+
+# 5. Secure MySQL installation
+sudo mysql_secure_installation
+# During this process:
+# - Set up root password
+# - Remove anonymous users
+# - Disallow root login remotely
+# - Remove test database
+# - Reload privilege tables
+
+# 6. Login to MySQL (if you set a root password)
+sudo mysql -u root -p
+
+# If you haven't set a root password yet, use:
+# sudo mysql
+
+# Once logged into MySQL, run these commands:
+
+-- Create the database
+CREATE DATABASE IF NOT EXISTS password_system;
+
+-- Use the database
+USE password_system;
+
+-- Create a simple password table
+CREATE TABLE IF NOT EXISTS passwords (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_used TIMESTAMP NULL
+);
+
+-- Insert 5 passwords for testing
+INSERT INTO passwords (password_hash) VALUES
+('Password123'),
+('Admin555'),
+('Test789'),
+('User2024'),
+('Login999');
+
+-- Verify the entries
+SELECT * FROM passwords;
+
+-- Create an index for better performance
+CREATE INDEX idx_password ON passwords(password_hash);
+

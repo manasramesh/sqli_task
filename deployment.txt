@@ -1,0 +1,94 @@
+Setup EC2 with 22,80 exposed. Download the ssh keys and connect via ssh. 
+then :
+    sudo apt update
+    sudo apt install python3-pip python3-venv nginx mysql-server
+then follow mysql commands (attached in this folder.) and create the db structure and setup password
+
+then: 
+    mkdir -p /var/www/login_app/{app1,app2}/templates
+    cd /var/www/login_app
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install flask mysql-connector-python gunicorn
+
+then deploy the python and html files. :
+    Copy app1.py to /var/www/login_app/app1/app.py
+    Copy app2.py to /var/www/login_app/app2/app.py
+    Copy page1.html to /var/www/login_app/app1/templates/login.html
+    Copy page2.html to /var/www/login_app/app2/templates/login.html
+
+then place below into /etc/nginx/sites-available/login_app  (replace the server name with domain or ip of the server)
+    sudo nano /etc/nginx/sites-available/login_app
+
+server {
+    listen 80;
+    server_name 3.108.194.120;
+
+    location /app1 {
+        proxy_pass http://localhost:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /app2 {
+        proxy_pass http://localhost:8002;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+then :
+    sudo ln -s /etc/nginx/sites-available/login_app /etc/nginx/sites-enabled/
+    sudo rm /etc/nginx/sites-enabled/default
+    sudo nginx -t
+    sudo systemctl restart nginx
+
+then add below into  /etc/systemd/system/login_app1.service
+    sudo nano /etc/systemd/system/login_app1.service
+
+
+[Unit]
+Description=Login App 1
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/var/www/login_app/app1
+Environment="PATH=/var/www/login_app/venv/bin"
+ExecStart=/var/www/login_app/venv/bin/gunicorn --workers 3 --bind localhost:8001 app:app
+
+[Install]
+WantedBy=multi-user.target
+
+then add below into  /etc/systemd/system/login_app2.service
+    sudo nano /etc/systemd/system/login_app2.service
+
+[Unit]
+Description=Login App 2
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/var/www/login_app/app2
+Environment="PATH=/var/www/login_app/venv/bin"
+ExecStart=/var/www/login_app/venv/bin/gunicorn --workers 3 --bind localhost:8002 app:app
+
+[Install]
+WantedBy=multi-user.target
+
+
+then :
+    sudo chown -R www-data:www-data /var/www/login_app
+    sudo chmod -R 755 /var/www/login_app
+
+then : 
+    sudo systemctl start login_app1 login_app2
+    sudo systemctl enable login_app1 login_app2
+
+then :
+    Configure ModSecurity WAF with nginx (only for app2 (secure app))
+    for that follow the modsecurity configuration text file attached. 
